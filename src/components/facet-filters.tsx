@@ -1,8 +1,46 @@
 'use client'
 
+import { useMemo } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { joinMultiParam, parseMultiParam, toggleValue } from '@/lib/url-state'
 import type { FacetValue } from '@/types/product'
+
+// row shown in the list (selected-in-URL values pinned first; may be missing from API top-N)
+type FacetRow = FacetValue & { missingFromApi?: boolean }
+
+function buildOrderedFacetRows(
+    items: FacetValue[],
+    selectedValues: string[]
+): FacetRow[] {
+    const byValue = new Map(items.map((i) => [i.value, i]))
+
+    const uniqueSelected: string[] = []
+    const seenSelected = new Set<string>()
+    for (const value of selectedValues) {
+        if (seenSelected.has(value)) continue
+        seenSelected.add(value)
+        uniqueSelected.push(value)
+    }
+
+    const selectedSet = new Set(uniqueSelected)
+
+    const pinned: FacetRow[] = []
+    for (const value of uniqueSelected) {
+        const fromApi = byValue.get(value)
+        if (fromApi) {
+            pinned.push(fromApi)
+        } else {
+            pinned.push({
+                value,
+                count: 0,
+                missingFromApi: true,
+            })
+        }
+    }
+
+    const rest = items.filter((i) => !selectedSet.has(i.value))
+    return [...pinned, ...rest]
+}
 
 // props for the facet filters component
 type FacetFiltersProps = {
@@ -23,6 +61,11 @@ export default function FacetFilters({
 
     // get the selected values from the URL
     const selectedValues = parseMultiParam(searchParams.get(paramName) || '')
+
+    const displayRows = useMemo(
+        () => buildOrderedFacetRows(items, selectedValues),
+        [items, selectedValues]
+    )
 
     // handle toggle: add or remove the value from the URL
     function handleToggle(value: string) {
@@ -53,22 +96,18 @@ export default function FacetFilters({
 
             {/* list of items */}
             <div className="max-h-[420px] space-y-2 overflow-auto pr-1">
-                {/* if there are no items, show a message */}
-                {items.length === 0 ? (
+                {/* if there are no items and nothing selected, show a message */}
+                {displayRows.length === 0 ? (
                     <p className="text-sm text-gray-500">No options available</p>
                 ) : (
-                    // map over the items
-                    items.map((item) => {
-                        // check if the item is selected
+                    displayRows.map((item) => {
                         const checked = selectedValues.includes(item.value)
 
                         return (
-                            // label for the item
                             <label
                                 key={item.value}
                                 className="flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1 hover:bg-gray-50"
                             >
-                                {/* checkbox and item value */}
                                 <span className="flex items-center gap-2">
                                     <input
                                         type="checkbox"
@@ -78,9 +117,8 @@ export default function FacetFilters({
                                     <span className="text-sm">{item.value}</span>
                                 </span>
 
-                                {/* count of products matching the item */}
                                 <span className="text-sm text-gray-500">
-                                    {item.count}
+                                    {item.missingFromApi ? '—' : item.count}
                                 </span>
                             </label>
                         )
