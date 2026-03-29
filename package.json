@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "import:products": "node --env-file=.env.local scripts/import-products.mjs"
+    "import:products": "node --env-file=.env.local scripts/import-products.mjs",
+    "import:product-relations": "node --env-file=.env.local scripts/import-products.mjs --relations-only"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.99.3",

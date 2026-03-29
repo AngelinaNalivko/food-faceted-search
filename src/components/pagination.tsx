@@ -1,6 +1,7 @@
 'use client'
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
+import { useNavigateSearch } from '@/components/navigation-provider'
 
 type PaginationProps = {
     page: number
@@ -14,8 +15,7 @@ export default function Pagination({
     total,
     pageSize,
 }: PaginationProps) {
-    const router = useRouter()
-    const pathname = usePathname()
+    const { isPending, navigateWithParams } = useNavigateSearch()
     const searchParams = useSearchParams()
     // calculate the total number of pages  
     const totalPages = Math.max(1, Math.ceil(total / pageSize))
@@ -37,16 +37,18 @@ export default function Pagination({
             params.set('page', String(nextPage))
         }
 
-        // push the new URL with the updated query string
-        router.push(`${pathname}?${params.toString()}`)
+        navigateWithParams(params)
     }
 
     return (
-        <div className="mt-8 flex items-center justify-between rounded-xl border p-4">
+        <div
+            className={`mt-8 flex items-center justify-between rounded-xl border p-4 ${isPending ? 'opacity-70' : ''}`}
+            aria-busy={isPending}
+        >
             {/* previous button */}
             <button
                 onClick={() => goToPage(page - 1)}
-                disabled={page <= 1}
+                disabled={page <= 1 || isPending}
                 className="rounded-lg border px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
                 Previous
@@ -60,7 +62,7 @@ export default function Pagination({
             {/* next button */}
             <button
                 onClick={() => goToPage(page + 1)}
-                disabled={page >= totalPages}
+                disabled={page >= totalPages || isPending}
                 className="rounded-lg border px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
                 Next

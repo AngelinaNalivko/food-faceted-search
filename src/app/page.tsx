@@ -2,7 +2,8 @@ import SearchBar from '@/components/search-bar'
 import FacetFilters from '@/components/facet-filters'
 import ProductList from '@/components/product-list'
 import Pagination from '@/components/pagination'
-import { SearchResponse } from '@/types/product'
+import { runSearch } from '@/lib/search/run-search'
+import type { SearchResponse } from '@/types/product'
 
 // props for the home page
 type HomePageProps = {
@@ -14,40 +15,23 @@ type HomePageProps = {
   }>
 }
 
-// get the search data from the API
+// function to get the search data
 async function getSearchData(params: {
   q?: string
   page?: string
   brands?: string
   categories?: string
 }): Promise<SearchResponse> {
-  // create a new URLSearchParams object
-  const query = new URLSearchParams()
+  // create the search params
+  const searchParams = new URLSearchParams()
 
-  // set the parameters
-  if (params.q) query.set('q', params.q)
-  if (params.page) query.set('page', params.page)
-  if (params.brands) query.set('brands', params.brands)
-  if (params.categories) query.set('categories', params.categories)
+  if (params.q) searchParams.set('q', params.q)
+  if (params.page) searchParams.set('page', params.page)
+  if (params.brands) searchParams.set('brands', params.brands)
+  if (params.categories) searchParams.set('categories', params.categories)
 
-  // get the base URL
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-
-
-  // fetch the search data
-  const response = await fetch(`${baseUrl}/api/search?${query.toString()}`, {
-    // don't cache the data when the URL changes
-    cache: 'no-store',
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch search data')
-  }
-
-  // parse the response as JSON
-  return response.json()
+  // run the search
+  return runSearch(searchParams)
 }
 
 // home page component

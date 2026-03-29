@@ -1,5 +1,4 @@
-// shared types for products returned from the API
-
+// type for the product
 export type Product = {
     barcode: string
     name: string
@@ -8,7 +7,7 @@ export type Product = {
     categories: string[]
 }
 
-// facet value with how many products match
+// type for the facet value
 export type FacetValue = {
     value: string
     count: number

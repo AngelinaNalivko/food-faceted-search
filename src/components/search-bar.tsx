@@ -1,30 +1,39 @@
 'use client'
 
-import { useState } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { useNavigateSearch } from '@/components/navigation-provider'
 
 // props for the search bar component
 type SearchBarProps = {
     initialQuery: string
 }
- // search bar component
+// search bar component
 export default function SearchBar({ initialQuery }: SearchBarProps) {
+    // create a state for the value
     const [value, setValue] = useState(initialQuery)
 
-    const router = useRouter()
-    const pathname = usePathname()
+    // get the is pending state and navigate with params
+    const { isPending, navigateWithParams } = useNavigateSearch()
     const searchParams = useSearchParams()
 
-    // copy current query string to save brands and categories when searching
+    // use effect to set the value
+    useEffect(() => {
+        setValue(initialQuery)
+    }, [initialQuery])
+
+    // function to clone the current query string
     function cloneParams() {
         return new URLSearchParams(searchParams.toString())
     }
-    // search input: submit updates 'q' in the URL and resets pagination
+    // function to handle the submit event
     function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         // prevent default form submission
         event.preventDefault()
 
+        // clone the current query string
         const params = cloneParams()
+        // trim the value
         const trimmed = value.trim()
 
         if (trimmed) {
@@ -35,48 +44,49 @@ export default function SearchBar({ initialQuery }: SearchBarProps) {
 
         // reset pagination
         params.delete('page')
-        // push new URL with updated query string
-        router.push(`${pathname}?${params.toString()}`)
+        navigateWithParams(params)
     }
 
-    // clear search input: remove 'q' and 'page' from the URL
+    // function to handle the clear event
     function handleClear() {
-        // clear search input
+        // set the value to an empty string
         setValue('')
-        // remove 'q' and 'page' from the URL
+        // clone the current query string
         const params = cloneParams()
         params.delete('q')
         params.delete('page')
-
-        // push new URL with updated query string
-        router.push(`${pathname}?${params.toString()}`)
+        // navigate with the params
+        navigateWithParams(params)
     }
 
     // return the search bar component
     return (
-        <form onSubmit={handleSubmit} className="flex gap-3">
+        <form onSubmit={handleSubmit} className="flex flex-wrap items-center gap-3">
             {/* search input */}
             <input
                 type="text"
                 value={value}
                 onChange={(event) => setValue(event.target.value)}
                 placeholder="Search products..."
-                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-gray-500"
+                disabled={isPending}
+                className="min-w-[12rem] flex-1 rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-gray-500 disabled:opacity-60"
             />
 
             {/* search button */}
             <button
                 type="submit"
-                className="rounded-lg border border-gray-300 px-4 py-2 font-medium hover:bg-gray-50"
+                disabled={isPending}
+                className="rounded-lg border border-gray-300 px-4 py-2 font-medium hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-                Search
+                {isPending ? 'Searching…' : 'Search'}
             </button>
 
             {/* clear button */}
             <button
                 type="button"
                 onClick={handleClear}
-                className="rounded-lg border border-gray-300 px-4 py-2 font-medium hover:bg-gray-50"
+                disabled={isPending}
+                className="rounded-lg border border-gray-300 px-4 py-2 font-medium hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
                 Clear
             </button>
